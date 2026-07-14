@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CCTV Reporter — Demo</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#94a3b8;--accent:#f97316;--glass: rgba(255,255,255,0.03)}
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, Arial; margin:0; min-height:100vh; background:linear-gradient(180deg,#071029 0%, #07192e 100%); color:#e6eef6; padding:28px}
+    .wrap{max-width:1000px;margin:0 auto}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    h1{margin:0;font-size:20px}
+    .controls{display:flex;gap:8px;margin-left:auto;align-items:center}
+    input[type='search']{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:var(--glass);color:inherit;min-width:220px}
+    button, .link-like, .btn-home {background:linear-gradient(90deg,#ff7a18,#ffb86b);border:0;padding:10px 12px;border-radius:10px;color:#081122;font-weight:600;cursor:pointer;text-decoration:none}
+    .link-like{display:inline-block;text-decoration:none}
+    
+    /* ወደ መነሻ ገጽ መመለሻ አዲስ በተን ስታይል */
+    .btn-home {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.2);
+        color: #fff;
+        transition: all 0.3s ease;
+    }
+    .btn-home:hover {
+        background: rgba(255,255,255,0.1);
+        border-color: #ff7a18;
+    }
+
+    .grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:20px}
+    @media(min-width:900px){.grid{grid-template-columns:1fr 320px}}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+    .list{display:flex;flex-direction:column;gap:12px}
+    .report{display:flex;gap:12px;align-items:flex-start}
+    .thumb{width:200px;height:120px;border-radius:8px;background:#000;overflow:hidden;display:block}
+    video{width:100%;height:100%;object-fit:cover;background:#000}
+    .meta{flex:1}
+    .meta h3{margin:0 0 6px 0;font-size:15px}
+    .meta p{margin:0;color:var(--muted);font-size:13px}
+    .meta .info{margin-top:8px;font-size:13px;color:var(--muted);line-height:1.4}
+    .info b{color:#e6eef6}
+    .actions{display:flex;gap:8px;margin-top:8px}
+    .small{padding:8px 10px;border-radius:8px;font-size:13px}
+    .danger{background:#ff4d4f;color:#fff}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
+    /* form styles */
+    .form-row{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+    label{font-size:13px;color:var(--muted)}
+    input[type='text'],textarea,input[type='datetime-local'],select{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    textarea{min-height:90px;resize:vertical}
+    .muted{color:var(--muted);font-size:13px}
+    .empty{padding:18px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);text-align:center;color:var(--muted)}
+    .search-highlight{background:rgba(249,115,22,0.15);padding:2px 4px;border-radius:4px;color:var(--accent)}
+    .small-field{display:flex;gap:8px}
+    .small-field > *{flex:1}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>CCTV Reporter</h1>
+        <div class="muted">Add, search, play, download, and manage camera reports</div>
+      </div>
+
+      <div class="controls">
+        <!-- ወደ መነሻ ገጽ መመለሻ በተን እዚህ ጋር ተጨምሯል -->
+        <a href="home.html" class="small btn-home">← Back to Home</a>
+        <input id="search" type="search" placeholder="Search reports (title / desc / attendant / video id / incident)" />
+        <button id="addBtn" class="small">+ Add Report</button>
+        <button id="clearAll" class="small ghost">Clear All</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between"><strong>Reports</strong>
+          <div class="muted" id="count">0 reports</div>
+        </div>
+
+        <div id="reportsList" class="list" style="margin-top:12px">
+          <div class="empty">No reports — click <span class="search-highlight">Add Report</span> to create one.</div>
+        </div>
+
+      </section>
+
+      <aside class="card">
+        <strong>Add / Edit Report</strong>
+        <form id="reportForm" style="margin-top:12px">
+          <div class="form-row">
+            <label for="title">Title</label>
+            <input id="title" type="text" placeholder="E.g. Entrance cam, 2025-11-17 02:10" required />
+          </div>
+
+          <div class="form-row">
+            <label for="desc">Description</label>
+            <textarea id="desc" placeholder="Short description (what happened, camera ID..)"></textarea>
+          </div>
+
+          <div class="form-row small-field">
+            <div>
+              <label for="attendant">Attendant Name</label>
+              <input id="attendant" type="text" placeholder="Attendant name" />
+            </div>
+            <div>
+              <label for="videoId">Video ID</label>
+              <input id="videoId" type="text" placeholder="E.g. CAM-04" />
+            </div>
+          </div>
+
+          <div class="form-row small-field">
+            <div>
+              <label for="incidentType">Incident Type</label>
+              <select id="incidentType">
+                <option value="">-- Select incident type --</option>
+                <option> Theft </option>
+                <option> Vandalism </option>
+                <option> Accident </option>
+                <option> Suspicious Activity </option>
+                <option> Other </option>
+              </select>
+            </div>
+            <div>
+              <label for="dateTime">Date & Time</label>
+              <input id="dateTime" type="datetime-local" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="videoFile">Video file</label>
+            <input id="videoFile" type="file" accept="video/*" required />
+            <div class="muted">Tip: use small clips for demo. Larger files take longer to store.</div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button id="saveBtn" class="small">Save Report</button>
+            <button id="cancelBtn" type="button" class="small ghost">Reset</button>
+          </div>
+
+          <div id="formFeedback" class="muted" style="margin-top:10px"></div>
+        </form>
+
+        <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)" />
+        <div class="muted">Instructions</div>
+        <ul class="muted" style="padding-left:18px;margin-top:8px">
+          <li>Use <strong>Add Report</strong> to upload a clip, add title & description.</li>
+          <li>Use Search to filter reports by title, description, attendant, video id or incident type.</li>
+          <li>Each report has active buttons: Play, Download, Delete.</li>
+        </ul>
+      </aside>
+    </main>
+
+    <footer>Local demo: data stored in your browser. Works offline in this tab. To run anywhere, save this file as <code>index.html</code> and open it in your browser.</footer>
+  </div>
+
+  <script>
+    /* IndexedDB small wrapper to store blobs and metadata (updated to include new fields) */
+    const DB_NAME = 'cctv_reports_db';
+    const DB_VERSION = 2; // bump version so upgrade runs
+    let db;
+
+    function openDB(){
+      return new Promise((resolve,reject)=>{
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e)=>{
+          const idb = e.target.result;
+          if(!idb.objectStoreNames.contains('reports')){
+            const store = idb.createObjectStore('reports',{keyPath:'id'});
+            store.createIndex('title','title',{unique:false});
+            store.createIndex('desc','desc',{unique:false});
+            store.createIndex('time','time',{unique:false});
+            store.createIndex('attendant','attendant',{unique:false});
+            store.createIndex('videoId','videoId',{unique:false});
+            store.createIndex('incidentType','incidentType',{unique:false});
+            store.createIndex('dateTime','dateTime',{unique:false});
+          } else {
+            const store = req.transaction.objectStore('reports');
+            try { store.createIndex('attendant','attendant',{unique:false}); } catch {}
+            try { store.createIndex('videoId','videoId',{unique:false}); } catch {}
+            try { store.createIndex('incidentType','incidentType',{unique:false}); } catch {}
+            try { store.createIndex('dateTime','dateTime',{unique:false}); } catch {}
+          }
+        }
+        req.onsuccess = (e)=>{ db = e.target.result; resolve(db); }
+        req.onerror = (e)=> reject(e.target.error);
+      })
+    }
+
+    function idbPut(report){
+      return new Promise((resolve,reject)=>{
+        const tx = db.transaction('reports','readwrite');
+        const store = tx.objectStore('reports');
+        const r = store.put(report);
+        r.onsuccess = ()=> resolve(report);
+        r.onerror = (e)=> reject(e.target.error);
+      })
+    }
+    function idbGetAll(){
+      return new Promise((resolve,reject)=>{
+        const tx = db.transaction('reports','readonly');
+        const store = tx.objectStore('reports');
+        const r = store.getAll();
+        r.onsuccess = ()=> resolve(r.result);
+        r.onerror = (e)=> reject(e.target.error);
+      })
+    }
+    function idbDelete(id){
+      return new Promise((resolve,reject)=>{
+        const tx = db.transaction('reports','readwrite');
+        const store = tx.objectStore('reports');
+        const r = store.delete(id);
+        r.onsuccess = ()=> resolve();
+        r.onerror = (e)=> reject(e.target.error);
+      })
+    }
+    function idbClear(){
+      return new Promise((resolve,reject)=>{
+        const tx = db.transaction('reports','readwrite');
+        const store = tx.objectStore('reports');
+        const r = store.clear();
+        r.onsuccess = ()=> resolve();
+        r.onerror = (e)=> reject(e.target.error);
+      })
+    }
+
+    function uid(){ return 'r_'+Date.now()+'_'+Math.random().toString(36).slice(2,9) }
+
+    const searchEl = document.getElementById('search');
+    const reportsList = document.getElementById('reportsList');
+    const countEl = document.getElementById('count');
+    const addBtn = document.getElementById('addBtn');
+    const reportForm = document.getElementById('reportForm');
+    const titleEl = document.getElementById('title');
+    const descEl = document.getElementById('desc');
+    const attendantEl = document.getElementById('attendant');
+    const videoIdEl = document.getElementById('videoId');
+    const incidentTypeEl = document.getElementById('incidentType');
+    const dateTimeEl = document.getElementById('dateTime');
+    const videoFileEl = document.getElementById('videoFile');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const formFeedback = document.getElementById('formFeedback');
+    const clearAllBtn = document.getElementById('clearAll');
+
+    let reportsCache = [];
+
+    function renderList(items, filter=''){
+      reportsList.innerHTML = '';
+      if(!items.length){
+        reportsList.innerHTML = '<div class="empty">No reports found.</div>';
+        countEl.textContent = '0 reports';
+        return;
+      }
+      countEl.textContent = items.length + (items.length===1 ? ' report' : ' reports');
+      items.sort((a,b)=> b.time - a.time).forEach(r => {
+        const el = document.createElement('div'); el.className='report';
+
+        const thumb = document.createElement('a'); thumb.className='thumb'; thumb.href='#'; thumb.addEventListener('click', e=>e.preventDefault());
+        const video = document.createElement('video'); video.controls = true; video.muted = true; video.playsInline = true;
+
+        const loadBtn = document.createElement('button'); loadBtn.className='small ghost'; loadBtn.textContent='Load';
+        loadBtn.addEventListener('click', async ()=>{ const blob = await getBlob(r.id); if(blob){ const url = URL.createObjectURL(blob); video.src = url; video.play().catch(()=>{}); } });
+
+        if(r.previewUrl){ video.src = r.previewUrl; }
+
+        thumb.appendChild(video);
+        el.appendChild(thumb);
+
+        const meta = document.createElement('div'); meta.className='meta';
+        const h3 = document.createElement('h3'); h3.innerHTML = highlight(r.title || 'Untitled', filter);
+
+        const p = document.createElement('p'); p.innerHTML = highlight(r.desc || '<span class="muted">No description</span>', filter);
+
+        const info = document.createElement('div'); info.className = 'info';
+        const attendantHtml = `<div><b>Attendant:</b> ${escapeHtml(r.attendant || '-')}</div>`;
+        const videoIdHtml = `<div><b>Video ID:</b> ${escapeHtml(r.videoId || '-')}</div>`;
+        const incidentHtml = `<div><b>Incident:</b> ${escapeHtml(r.incidentType || '-')}</div>`;
+        const dateHtml = `<div><b>Date & Time:</b> ${ r.dateTime ? new Date(r.dateTime).toLocaleString() : new Date(r.time).toLocaleString() }</div>`;
+        info.innerHTML = attendantHtml + videoIdHtml + incidentHtml + dateHtml;
+
+        const actions = document.createElement('div'); actions.className='actions';
+
+        const playBtn = document.createElement('button'); playBtn.className='small'; playBtn.textContent='Play';
+        playBtn.addEventListener('click', async ()=>{
+          const blob = await getBlob(r.id);
+          if(!blob){ alert('Video not found.'); return; }
+          const url = URL.createObjectURL(blob);
+          const win = window.open('', '_blank', 'width=800,height=480');
+          win.document.write(`<title>${escapeHtml(r.title)}</title>`);
+          win.document.write(`<body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center"><video controls autoplay style="width:100%;height:100%"><source src="${url}" type="video/mp4"></video></body>`);
+        });
+
+        const dlLink = document.createElement('a'); dlLink.className='link-like small'; dlLink.textContent='Download';
+        dlLink.href = '#'; 
+        dlLink.addEventListener('click', async (e)=>{
+          e.preventDefault();
+          const blob = await getBlob(r.id);
+          if(!blob){ alert('Video not found'); return; }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          const name = (r.videoId ? r.videoId.replace(/\s+/g,'_') + '_' : '') + ((r.title || 'cctv-report').replace(/\s+/g,'_')) + '.mp4';
+          a.href = url; a.download = name;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(()=>URL.revokeObjectURL(url), 5000);
+        });
+
+        const delBtn = document.createElement('button'); delBtn.className='small danger'; delBtn.textContent='Delete';
+        delBtn.addEventListener('click', async ()=>{
+          if(!confirm('Delete this report?')) return;
+          await idbDelete(r.id);
+          await refresh();
+        });
+
+        actions.appendChild(playBtn);
+        actions.appendChild(dlLink);
+        actions.appendChild(delBtn);
+
+        meta.appendChild(h3); meta.appendChild(p); meta.appendChild(info); meta.appendChild(actions);
+        el.appendChild(meta);
+
+        reportsList.appendChild(el);
+      })
+    }
+
+    function highlight(text, filter){
+      if(!filter) return escapeHtml(text);
+      const f = filter.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      return escapeHtml(text).replace(new RegExp(f,'ig'), m=>`<span class="search-highlight">${m}</span>`);
+    }
+
+    function escapeHtml(s){ return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+    async function addReport({title,desc,blob,attendant,videoId,incidentType,dateTime}){
+      const id = uid();
+      const previewUrl = await makePreview(blob);
+      const time = Date.now();
+      const dt = dateTime ? new Date(dateTime).toISOString() : null;
+      const record = { id, title, desc, time, blob, previewUrl, attendant, videoId, incidentType, dateTime: dt };
+      await idbPut(record);
+      await refresh();
+    }
+
+    async function getBlob(id){
+      return new Promise((resolve,reject)=>{
+        const tx = db.transaction('reports','readonly');
+        const store = tx.objectStore('reports');
+        const r = store.get(id);
+        r.onsuccess = ()=>{
+          const rec = r.result; resolve(rec ? rec.blob : null);
+        }
+        r.onerror = e=> reject(e.target.error);
+      })
+    }
+
+    async function makePreview(blob){
+      try{
+        const url = URL.createObjectURL(blob);
+        return url;
+      }catch(e){return null}
+    }
+
+    async function refresh(filter=''){
+      const all = await idbGetAll();
+      reportsCache = all.map(r=>({
+        id:r.id,
+        title:r.title,
+        desc:r.desc,
+        time:r.time,
+        previewUrl:r.previewUrl,
+        attendant:r.attendant,
+        videoId:r.videoId,
+        incidentType:r.incidentType,
+        dateTime:r.dateTime
+      }));
+      const f = (filter||'').toLowerCase();
+      const filtered = reportsCache.filter(r=>{
+        if(!f) return true;
+        return (r.title||'').toLowerCase().includes(f) ||
+               (r.desc||'').toLowerCase().includes(f) ||
+               (r.attendant||'').toLowerCase().includes(f) ||
+               (r.videoId||'').toLowerCase().includes(f) ||
+               (r.incidentType||'').toLowerCase().includes(f);
+      });
+      renderList(filtered, filter);
+    }
+
+    function setNowToDateTimeInput(){
+      const now = new Date();
+      const tzOffset = now.getTimezoneOffset() * 60000;
+      const localISOTime = (new Date(now - tzOffset)).toISOString().slice(0,16);
+      dateTimeEl.value = localISOTime;
+    }
+
+    (async ()=>{
+      await openDB();
+      await refresh();
+      setNowToDateTimeInput();
+    })();
+
+    addBtn.addEventListener('click', ()=>{ window.scrollTo({top:0,behavior:'smooth'}); titleEl.focus(); setNowToDateTimeInput(); });
+    cancelBtn.addEventListener('click', ()=>{ reportForm.reset(); formFeedback.textContent='Form cleared.'; setTimeout(()=>formFeedback.textContent='',2000); setNowToDateTimeInput(); });
+
+    reportForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const file = videoFileEl.files[0];
+      if(!file){ formFeedback.textContent = 'Please select a video file.'; return; }
+      formFeedback.textContent = 'Saving...';
+      const blob = file.slice(0, file.size, file.type);
+      try{
+        await addReport({
+          title: titleEl.value.trim() || ('Report '+new Date().toLocaleString()),
+          desc: descEl.value.trim(),
+          blob,
+          attendant: attendantEl.value.trim(),
+          videoId: videoIdEl.value.trim(),
+          incidentType: incidentTypeEl.value.trim(),
+          dateTime: dateTimeEl.value
+        });
+        formFeedback.textContent = 'Saved.'; reportForm.reset();
+        setTimeout(()=>formFeedback.textContent='',1500);
+        setNowToDateTimeInput();
+      }catch(err){ console.error(err); formFeedback.textContent = 'Error saving: '+err.message }
+    });
+
+    searchEl.addEventListener('input', (e)=>{ refresh(e.target.value) });
+
+    clearAllBtn.addEventListener('click', async ()=>{
+      if(!confirm('Clear ALL reports from this browser? This cannot be undone.')) return;
+      await idbClear();
+      await refresh();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CCTV Maintenance Log Book</title>
+  <style>
+    :root {
+      --bg: #071029;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #e6eef6;
+      --text-muted: #94a3b8;
+      --accent: #ff7a18;
+      --accent-gradient: linear-gradient(90deg, #ff7a18, #ffb86b);
+    }
+
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    body {
+      margin: 0;
+      padding: 30px;
+      background: linear-gradient(180deg, #071029 0%, #0c1a3a 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    .wrapper { max-width: 1200px; margin: 0 auto; }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 20px;
+    }
+
+    h1 { margin: 0; font-size: 24px; color: #fff; }
+    .subtitle { color: var(--text-muted); font-size: 14px; margin-top: 5px; }
+
+    .btn-back {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 600;
+      transition: 0.3s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.1); border-color: var(--accent); }
+
+    .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media (min-width: 950px) { .grid { grid-template-columns: 320px 1fr; } }
+
+    /* ፎርም ስታይል */
+    .form-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      height: fit-content;
+    }
+    .form-card h3 { margin-top: 0; margin-bottom: 15px; color: var(--accent); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;}
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    label { font-size: 13px; color: var(--text-muted); }
+    input, select, textarea {
+      padding: 10px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; }
+    textarea { resize: vertical; min-height: 70px; }
+
+    button.btn-submit {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent-gradient);
+      border: none;
+      border-radius: 6px;
+      color: #081122;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: 0.3s;
+    }
+    button.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(249,115,22,0.3); }
+
+    /* የሰንጠረዥ (Table) ስታይል */
+    .table-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .table-header-tools {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .search-box {
+      padding: 8px 12px;
+      width: 250px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: #fff;
+    }
+
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 700px; }
+    th, td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+    th { background-color: rgba(255,255,255,0.02); color: var(--accent); font-weight: 600; }
+    tr:hover { background-color: rgba(255,255,255,0.01); }
+    
+    .btn-delete {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn-delete:hover { background: #dc2626; }
+    
+    .empty-row { text-align: center; color: var(--text-muted); padding: 30px; }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+  <header>
+    <div>
+      <h1>CCTV Maintenance Log Book</h1>
+      <div class="subtitle">የካሜራዎች ጥገና እና መቋረጥ መከታተያ ሰንጠረዥ</div>
+    </div>
+    <a href="home.html" class="btn-back">← Back to Home</a>
+  </header>
+
+  <main class="grid">
+    <!-- 1. መረጃ ማስገቢያ ፎርም -->
+    <section class="form-card">
+      <h3>New Maintenance Entry</h3>
+      <form id="maintenanceForm">
+        <div class="form-group">
+          <label for="camName">Camera Name / ID</label>
+          <input type="text" id="camName" placeholder="E.g. CAM-01" required />
+        </div>
+        
+        <div class="form-group">
+          <label for="camLocation">Camera Location (ቦታ)</label>
+          <input type="text" id="camLocation" placeholder="E.g. Main Gate, Warehouse" required />
+        </div>
+
+        <div class="form-group">
+          <label for="downtimeReason">Reason for Downtime (የተቋረጠበት ምክንያት)</label>
+          <select id="downtimeReason" required>
+            <option value="">-- Select Reason --</option>
+            <option value="Power Failure">Power Failure (የመብራት መጥፋት)</option>
+            <option value="Network Disconnect">Network Disconnection (የኔትወርክ መቋረጥ)</option>
+            <option value="Hardware Damaged">Hardware Damaged (የዕቃ መበላሸት)</option>
+            <option value="Cable Cut">Cable Cut (የገመድ መበጠስ)</option>
+            <option value="Maintenance Clean">Routine Maintenance/Cleaning</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="downtimeTime">Downtime Date & Time (የተቋረጠበት ሰዓት)</label>
+          <input type="datetime-local" id="downtimeTime" required />
+        </div>
+
+        <div class="form-group">
+          <label for="actionTaken">Action Taken (የተወሰደ እርምጃ)</label>
+          <input type="text" id="actionTaken" placeholder="E.g. Replaced RJ45 connector" required />
+        </div>
+
+        <div class="form-group">
+          <label for="description">General Description / Notes (መግለጫ)</label>
+          <textarea id="description" placeholder="Any additional status details..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit">Save to Log</button>
+      </form>
+    </section>
+
+    <!-- 2. መረጃ ማሳያ ሰንጠረዥ (Table) -->
+    <section class="table-card">
+      <div class="table-header-tools">
+        <strong>Maintenance Logs List</strong>
+        <input type="text" id="tableSearch" class="search-box" placeholder="Search by Camera or Location..." oninput="searchTable()" />
+      </div>
+
+      <table id="logsTable">
+        <thead>
+          <tr>
+            <th>Camera ID</th>
+            <th>Location</th>
+            <th>Reason</th>
+            <th>Downtime Time</th>
+            <th>Action Taken</th>
+            <th>Description</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- መረጃዎች እዚህ ጋር በጃቫስክሪፕት ይገባሉ -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+</div>
+
+<script>
+  const MAINTENANCE_DB = 'cctv_maintenance_db';
+  let maintenanceLogs = [];
+
+  // ገጹ ሲከፈት መረጃዎችን ከ LocalStorage መጫን
+  window.onload = function() {
+    const savedLogs = localStorage.getItem(MAINTENANCE_DB);
+    if (savedLogs) {
+      maintenanceLogs = JSON.parse(savedLogs);
+    }
+    renderTable(maintenanceLogs);
+    setNow();
+  };
+
+  // የአሁኑን ሰዓት በፎርሙ ላይ በዲፎልት መሙላት
+  function setNow(){
+    const now = new Date();
+    document.getElementById('downtimeTime').value = new Date(now - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  }
+
+  // ፎርሙ ሰብሚት ሲደረግ መረጃ መመዝገብ
+  document.getElementById('maintenanceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const newLog = {
+      id: Date.now(),
+      camName: document.getElementById('camName').value,
+      camLocation: document.getElementById('camLocation').value,
+      downtimeReason: document.getElementById('downtimeReason').value,
+      downtimeTime: document.getElementById('downtimeTime').value,
+      actionTaken: document.getElementById('actionTaken').value,
+      description: document.getElementById('description').value || '-'
+    };
+
+    maintenanceLogs.push(newLog);
+    saveToStorage();
+    renderTable(maintenanceLogs);
+    
+    // ፎርሙን ማጽዳት
+    document.getElementById('maintenanceForm').reset();
+    setNow();
+  });
+
+  // መረጃዎችን ወደ LocalStorage ማስቀመጥ
+  function saveToStorage() {
+    localStorage.setItem(MAINTENANCE_DB, JSON.stringify(maintenanceLogs));
+  }
+
+  // ሰንጠረዡን (Table) ስዕላዊ መግለጫ መገንባት
+  function renderTable(data) {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-row">ምንም የጥገና ሪፖርት አልተመዘገበም።</td></tr>`;
+      return;
+    }
+
+    // አዲሱ የተመዘገበ ከላይ እንዲሆን ገልብጠን እናሳያለን
+    [...data].reverse().forEach(log => {
+      const tr = document.createElement('tr');
+      
+      tr.innerHTML = `
+        <td style="font-weight:bold; color:#fff;">${escapeHtml(log.camName)}</td>
+        <td>${escapeHtml(log.camLocation)}</td>
+        <td><span style="color:#ffb86b;">${escapeHtml(log.downtimeReason)}</span></td>
+        <td>${new Date(log.downtimeTime).toLocaleString()}</td>
+        <td>${escapeHtml(log.actionTaken)}</td>
+        <td style="color:#94a3b8; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(log.description)}">${escapeHtml(log.description)}</td>
+        <td><button class="btn-delete" onclick="deleteLog(${log.id})">Delete</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ሰርዝ (Delete) ፈንክሽን
+  function deleteLog(id) {
+    if (confirm('ይህን የጥገና ሪፖርት መሰረዝ ትፈልጋለህ?')) {
+      maintenanceLogs = maintenanceLogs.filter(log => log.id !== id);
+      saveToStorage();
+      renderTable(maintenanceLogs);
+    }
+  }
+
+  // ፍለጋ (Search) ፈንክሽን
+  function searchTable() {
+    const query = document.getElementById('tableSearch').value.toLowerCase();
+    const filteredLogs = maintenanceLogs.filter(log => 
+      log.camName.toLowerCase().includes(query) || 
+      log.camLocation.toLowerCase().includes(query) ||
+      log.downtimeReason.toLowerCase().includes(query)
+    );
+    renderTable(filteredLogs);
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+</script>
+
+</body>
+</html>
